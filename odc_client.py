@@ -1,6 +1,6 @@
 """A small CLI tool to help with working with the ODC Server."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 import json
 import subprocess
@@ -16,6 +16,9 @@ USERNAME: Final[str] = "username"
 PASSWORD: Final[str] = "password"
 HOSTNAME: Final[str] = "hostname"
 PORT: Final[str] = "port"
+
+APP_ZIP: Final[str] = "app.zip"
+DATA_ZIP: Final[str] = "data.zip"
 
 app = typer.Typer()
 
@@ -120,11 +123,19 @@ def build_jar(build_command: str):
         raise typer.Exit(code=2)
 
 
-def zip_python(python_dir: Path = Path.cwd()):
-    print(f"Zipping '.py' files in {python_dir.resolve()}")
-    with ZipFile("app.zip", "w") as app_zip:
-        for python_file in python_dir.glob("*.py"):
+def zip_files(path: Path, zip_name: str, glob: str):
+    print(f"Zipping '{glob}' files in {path.resolve()}")
+    with ZipFile(zip_name, "w") as app_zip:
+        for python_file in path.glob(glob):
             app_zip.write(python_file)
+
+
+def zip_python(python_dir: Path = Path.cwd()):
+    zip_files(python_dir, APP_ZIP, "*.py")
+
+
+def zip_data(data_dir: Path):
+    zip_files(data_dir, DATA_ZIP, "*.csv")
 
 
 @app.command()
@@ -146,12 +157,20 @@ def submit(
     python_dir: Path = typer.Option(
         Path("app"), help="The directory in which the main.py lives."
     ),
+    data_path: Path = typer.Option(
+        Path.cwd(), help="The directory where the data files live."
+    ),
+    skip_data: bool = typer.Option(
+        False, "--skip-data", help="Skip uploading the data files."
+    ),
 ):
     """
     Submit the project to the SFTP server. It automatically determines if it is a Java
     or Python project by checking whether there is a pom.xml file. For Python projects
     both using a single main.py file and having several files in an app directory is
     supported.
+    Also supports uploading the data files. By default, it assumes that they live in the
+    root of the directory.
     """
     if Path("pom.xml").is_file():
         print("Detected Java project")
@@ -162,14 +181,17 @@ def submit(
     elif python_dir.is_dir():
         print(f"Detected Python project in {python_dir}")
         zip_python(python_dir)
-        submission = "app.zip"
+        submission = APP_ZIP
     elif Path("main.py").is_file():
         print("Detected Python project")
         zip_python()
-        submission = "app.zip"
+        submission = APP_ZIP
     else:
         print("Can't figure out what kind of project this is")
         raise typer.Abort()
+
+    if not skip_data:
+        zip_data(data_path)
 
     remote_path = Path("/home/") / remote_dir
 
@@ -178,6 +200,10 @@ def submit(
         c.open()
         print(f"Uploading {submission}...")
         c.put(submission, remote=str(remote_path))
+
+        if not skip_data:
+            print(f"Uploading {DATA_ZIP}...")
+            c.put(DATA_ZIP, remote=str(remote_path))
 
     print("Done!")
 

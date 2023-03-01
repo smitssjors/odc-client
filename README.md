@@ -25,4 +25,4 @@ odc-client submit
 ```
 
 It will automatically try to detect whether you have a Java or Python project by checking for a `pom.xml` file.
-For more information use the `--help` flag.
+For more information use the `--help` flag. It also supports uploading the data files.

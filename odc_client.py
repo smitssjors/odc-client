@@ -93,8 +93,7 @@ def init(
 
     if not force and config_file_path.is_file():
         raise typer.BadParameter(
-            f"File {config_file_path} already exists. Use the --force option to overwrite it.",
-            param_hint="location",
+            f"File {config_file_path} already exists. Use the --force option to overwrite it."
         )
 
     config = {USERNAME: username, PASSWORD: password, HOSTNAME: hostname, PORT: port}
@@ -110,6 +109,23 @@ def init(
             raise typer.Exit()
         with open(gitignore_path, "a") as f:
             f.write(f"\n# ODC Client\n{CONFIG_FILE_NAME}\n")
+
+
+def build_jar(build_command: str):
+    build_command = build_command.strip()
+    print(f"Running `{build_command}`...")
+    result = subprocess.run(build_command.split(" "))
+
+    if result.returncode != 0:
+        print("Failed to build package")
+        raise typer.Exit(code=2)
+
+
+def zip_python(python_dir: Path = Path.cwd()):
+    print(f"Zipping '.py' files in {python_dir.resolve()}")
+    with ZipFile("app.zip", "w") as app_zip:
+        for python_file in python_dir.glob("*.py"):
+            app_zip.write(python_file)
 
 
 @app.command()
@@ -139,29 +155,22 @@ def submit(
     supported.
     """
     if Path("pom.xml").is_file():
+        print("Detected Java project")
         if not skip_build:
-            build_command = build_command.strip()
-            print(f"Running `{build_command}`...")
-            result = subprocess.run(build_command.split(" "))
-
-            if result.returncode != 0:
-                print("Failed to build package")
-                raise typer.Exit(code=2)
+            build_jar(build_command)
 
         submission = jar_path
-    else:
-        if python_dir.is_dir():
-            print(f"Zipping {python_dir} directory...")
-            shutil.make_archive("app", "zip", python_dir)
-        elif Path("main.py").is_file():
-            print("Zipping main.py...")
-            with ZipFile("app.zip", "w") as app_zip:
-                app_zip.write("main.py")
-        else:
-            print("Can't figure out what kind of project this is")
-            raise typer.Abort()
-
+    elif python_dir.is_dir():
+        print(f"Detected Python project in {python_dir}")
+        zip_python(python_dir)
         submission = "app.zip"
+    elif Path("main.py").is_file():
+        print("Detected Python project")
+        zip_python()
+        submission = "app.zip"
+    else:
+        print("Can't figure out what kind of project this is")
+        raise typer.Abort()
 
     remote_path = Path("/home/") / remote_dir
 

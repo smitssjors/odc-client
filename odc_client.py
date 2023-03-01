@@ -124,7 +124,7 @@ def build_jar(build_command: str):
 
 
 def zip_files(path: Path, zip_name: str, glob: str):
-    print(f"Zipping '{glob}' files in {path.resolve()}")
+    print(f"Zipping '{glob}' files in {path.resolve()}...")
     with ZipFile(zip_name, "w") as app_zip:
         for python_file in path.glob(glob):
             app_zip.write(python_file)

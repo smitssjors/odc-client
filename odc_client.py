@@ -1,6 +1,6 @@
 """A small CLI tool to help with working with the ODC Server."""
 
-__version__ = "0.2.1"
+__version__ = "0.2.2"
 
 import json
 import subprocess
@@ -142,8 +142,8 @@ def zip_data(data_dir: Path):
 def submit(
     remote_dir: Path = typer.Option(
         Path(),
-        help="The remote directory to upload the program to. The directory is prefixed with '/home' so 'mydir' will "
-        "give `/home/mydir`.",
+        help="The remote directory to upload the program to. "
+        "The directory is prefixed with '/home' so 'mydir' will give `/home/mydir`.",
     ),
     skip_build: bool = typer.Option(
         False, "--skip-build", help="Skip building the jar."
@@ -155,7 +155,9 @@ def submit(
         Path("target/app.jar"), help="The location of the compiled jar."
     ),
     python_dir: Path = typer.Option(
-        Path("app"), help="The directory in which the main.py lives."
+        Path("app"),
+        help="The directory in which the main.py lives. "
+        "If it does not exists, it is assumed that the files live in the root.",
     ),
     data_path: Path = typer.Option(
         Path.cwd(), help="The directory where the data files live."

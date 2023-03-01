@@ -3,7 +3,6 @@
 __version__ = "0.1.0"
 
 import json
-import shutil
 import subprocess
 from pathlib import Path
 from typing import Final

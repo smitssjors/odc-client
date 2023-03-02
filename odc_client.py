@@ -1,6 +1,6 @@
 """A small CLI tool to help with working with the ODC Server."""
 
-__version__ = "0.2.2"
+__version__ = "0.2.3"
 
 import json
 import subprocess
@@ -127,7 +127,7 @@ def zip_files(path: Path, zip_name: str, glob: str):
     print(f"Zipping '{glob}' files in {path.resolve()}...")
     with ZipFile(zip_name, "w") as app_zip:
         for python_file in path.glob(glob):
-            app_zip.write(python_file)
+            app_zip.write(python_file, arcname=python_file.name)
 
 
 def zip_python(python_dir: Path = Path.cwd()):
